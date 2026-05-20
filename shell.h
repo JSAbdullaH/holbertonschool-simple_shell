@@ -15,7 +15,7 @@ extern char **environ;
 
 /* Prototypes */
 void display_prompt(void);
-int read_line(char *buf, int size);
+char *read_line(void);
 void strip_newline(char *str);
 void execute_command(char *cmd);
 
