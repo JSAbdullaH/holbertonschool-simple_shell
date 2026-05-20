@@ -59,3 +59,45 @@ newline = strchr(str, '\n');
 if (newline)
 *newline = '\0';
 }
+
+/**
+ * execute_command - Forks and executes the given command
+ * @cmd: the full path to the executable to run
+ *
+ * Prints an error message to stderr if the executable
+ * cannot be found or executed. The parent waits for the
+ * child to complete.
+ *
+ * Return: void
+ */
+void execute_command(char *cmd)
+{
+char *argv[2];
+pid_t pid;
+int status = 0;
+
+pid = fork();
+if (pid == -1)
+{
+perror("fork");
+exit(EXIT_FAILURE);
+}
+
+if (pid == 0)
+{
+argv[0] = cmd;
+argv[1] = NULL;
+
+if (execve(cmd, argv, environ) == -1)
+{
+fprintf(stderr, "./simple_shell: No such file or directory: %s\n", cmd);
+exit(EXIT_FAILURE);
+}
+
+}
+else
+{
+waitpid(pid, &status, 0);
+}
+
+}
