@@ -20,4 +20,3 @@ void strip_newline(char *str);
 void execute_command(char *cmd);
 
 #endif
-

@@ -1,12 +1,12 @@
 #include "shell.h"
 
 /**
- * display_promt - Prints the shell promt to stdout
+ * display_prompt - Prints the shell prompt to stdout
  * Only displays when stdin is connected to a terminal
  *
  * Return: void
  */
-void display_promt(void)
+void display_prompt(void)
 {
 if (isatty(STDIN_FILENO))
 write(STDOUT_FILENO, PROMPT, 2);
@@ -40,4 +40,22 @@ return (NULL);
 }
 
 return (line);
+}
+
+/**
+ * strip_newline - Removes the trailing newline character
+ * from a string
+ * @str: The string to modify in place
+ *
+ * Searches for the first newline and replaces it with a null byte
+ *
+ * Return: void
+ */
+void strip_newline(char *str)
+{
+char *newline;
+
+newline = strchr(str, '\n');
+if (newline)
+*newline = '\0';
 }
