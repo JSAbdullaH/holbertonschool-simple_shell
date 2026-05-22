@@ -89,76 +89,145 @@ char **strip_newline(char *line)
 }
 
 /**
- * execute_command - Forks and executes the given command
- * @cmd: the full path to the executable to run
+ * get_path - Locates a command in the PATH environment variable
+ * @command: The command to find
  *
- * Prints an error message to stderr if the executable
- * cannot be found or executed. The parent waits for the
- * child to complete.
+ * Return: A dynamically allocated string containing the full path,
+ * or NULL if the command cannot be found.
+ */
+char *get_path(char *command)
+{
+    char *path, *path_copy, *path_token, *file_path;
+    int command_len, directory_len;
+    struct stat buffer;
+
+    if (command == NULL)
+        return (NULL);
+
+    /* If the command already contains a slash (e.g., /bin/ls or ./a.out) */
+    if (strchr(command, '/') != NULL)
+    {
+        if (stat(command, &buffer) == 0)
+            return (strdup(command));
+        return (NULL);
+    }
+
+    path = getenv("PATH"); /* Replace with custom _getenv if required */
+    if (path == NULL)
+        return (NULL);
+
+    path_copy = strdup(path);
+    if (path_copy == NULL)
+        return (NULL);
+
+    command_len = strlen(command);
+    path_token = strtok(path_copy, ":");
+
+    while (path_token != NULL)
+    {
+        directory_len = strlen(path_token);
+        file_path = malloc(command_len + directory_len + 2); /* +2 for '/' and '\0' */
+        
+        if (file_path == NULL)
+        {
+            free(path_copy);
+            return (NULL);
+        }
+
+        /* Build the path: directory/command */
+        strcpy(file_path, path_token);
+        strcat(file_path, "/");
+        strcat(file_path, command);
+
+        /* Check if the built path exists */
+        if (stat(file_path, &buffer) == 0)
+        {
+            free(path_copy);
+            return (file_path);
+        }
+
+        free(file_path); /* Free the failed attempt */
+        path_token = strtok(NULL, ":");
+    }
+
+    free(path_copy);
+    return (NULL);
+}
+
+/**
+ * execute_command - Forks and executes the given command
+ * @argv: Array of arguments parsed from the command line
  *
  * Return: void
  */
 void execute_command(char **argv)
 {
-pid_t pid;
-int status;
+    pid_t pid;
+    int status;
+    char *actual_cmd;
 
-if (argv[0] == NULL)
-  return;
+    if (argv[0] == NULL)
+        return;
 
-pid = fork();
-if (pid == -1)
-{
-perror("fork");
-exit(EXIT_FAILURE);
-}
+    /* 1. Resolve the path BEFORE forking */
+    actual_cmd = get_path(argv[0]);
+    if (actual_cmd == NULL)
+    {
+        fprintf(stderr, "./simple_shell: 1: %s: not found\n", argv[0]);
+        return; /* Exit the function entirely; fork is NEVER called */
+    }
 
-if (pid == 0)
-{
+    /* 2. Fork only because we know the command exists */
+    pid = fork();
+    if (pid == -1)
+    {
+        perror("fork");
+        free(actual_cmd);
+        exit(EXIT_FAILURE);
+    }
 
-  if (execve(argv[0], argv, environ) == -1)
-
-  {
-    fprintf(stderr, "./simple_shell: 1: %s: not found\n", argv[0]);
-    exit(EXIT_FAILURE);
-  }
-
-}
-else
-{
-waitpid(pid, &status, 0);
-}
-
+    if (pid == 0)
+    {
+        /* Child process executes the valid path */
+        if (execve(actual_cmd, argv, environ) == -1)
+        {
+            perror(argv[0]);
+            free(actual_cmd);
+            exit(EXIT_FAILURE);
+        }
+    }
+    else
+    {
+        /* Parent process waits and cleans up memory */
+        waitpid(pid, &status, 0);
+        free(actual_cmd); 
+    }
 }
 
 /**
  * main - Entry point for simple shell
  *
- * Repeatedly display a prompt, reads a command, and
- * executes it until EOF is received or a read error occurs
- *
  * Return: Always 0
  */
 int main(void)
 {
-char *line;
-char **argv;
+    char *line;
+    char **argv;
 
-while (1)
-{
-display_prompt();
+    while (1)
+    {
+        display_prompt();
 
-line = read_line();
-if (line == NULL)
-break;
+        line = read_line();
+        if (line == NULL)
+            break;
 
-argv = strip_newline(line);
-execute_command(argv);
+        argv = strip_newline(line);
+        execute_command(argv);
 
-free(argv);
+        free(argv);
+        free(line);
+    }
 
-free(line);
-}
-
-return (0);
+    return (0);
 }

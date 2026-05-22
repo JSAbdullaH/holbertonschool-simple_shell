@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 
 #define PROMPT "$ "
 #define TOK_DELIM " \t\r\n"
@@ -19,5 +20,6 @@ void display_prompt(void);
 char *read_line(void);
 char **strip_newline(char *line);
 void execute_command(char **argv);
+char *get_path(char *command);
 
 #endif
