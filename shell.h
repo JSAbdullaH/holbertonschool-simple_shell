@@ -14,12 +14,12 @@
 #define TOK_BUFSIZE 64
 
 extern char **environ;
-char *_getenv(const char *name);
 
 void display_prompt(void);
 char *read_line(void);
 char **strip_newline(char *line);
-void execute_command(char **argv);
+int execute_command(char **argv, char *shell_name);
 char *get_path(char *command);
+char *_getenv(const char *name);
 
 #endif

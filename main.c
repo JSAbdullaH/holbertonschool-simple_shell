@@ -195,27 +195,27 @@ char *get_path(char *command)
 /**
  * execute_command - Forks and executes the given command
  * @argv: Array of arguments parsed from the command line
+ * @shell_name: The name of the shell executable (from main's argv[0])
  *
- * Return: void
+ * Return: The exit status of the executed command, or 127 if not found
  */
-void execute_command(char **argv)
+int execute_command(char **argv, char *shell_name)
 {
     pid_t pid;
     int status;
     char *actual_cmd;
 
     if (argv[0] == NULL)
-        return;
+        return (0);
 
-    /* 1. Resolve the path BEFORE forking */
     actual_cmd = get_path(argv[0]);
     if (actual_cmd == NULL)
     {
-        fprintf(stderr, "./simple_shell: 1: %s: not found\n", argv[0]);
-        return; /* Exit the function entirely; fork is NEVER called */
+        /* Use the actual shell name dynamically instead of hardcoding */
+        fprintf(stderr, "%s: 1: %s: not found\n", shell_name, argv[0]);
+        return (127); /* Standard exit code for "command not found" */
     }
 
-    /* 2. Fork only because we know the command exists */
     pid = fork();
     if (pid == -1)
     {
@@ -226,31 +226,37 @@ void execute_command(char **argv)
 
     if (pid == 0)
     {
-        /* Child process executes the valid path */
         if (execve(actual_cmd, argv, environ) == -1)
         {
-            perror(argv[0]);
+            perror(shell_name);
             free(actual_cmd);
-            exit(EXIT_FAILURE);
+            exit(127);
         }
     }
     else
     {
-        /* Parent process waits and cleans up memory */
         waitpid(pid, &status, 0);
-        free(actual_cmd); 
+        free(actual_cmd);
+        
+        /* Extract the actual exit code of the child process */
+        if (WIFEXITED(status))
+            return (WEXITSTATUS(status));
     }
+    
+    return (0);
 }
-
 /**
  * main - Entry point for simple shell
+ * @argc: Argument count
+ * @argv: Argument vector
  *
- * Return: Always 0
+ * Return: The exit status of the last executed command
  */
-int main(void)
+int main(int argc __attribute__((unused)), char **argv)
 {
     char *line;
-    char **argv;
+    char **cmd_argv;
+    int status = 0; /* Keep track of the exit status */
 
     while (1)
     {
@@ -260,12 +266,14 @@ int main(void)
         if (line == NULL)
             break;
 
-        argv = strip_newline(line);
-        execute_command(argv);
+        cmd_argv = strip_newline(line);
+        
+        if (cmd_argv[0] != NULL)
+            status = execute_command(cmd_argv, argv[0]); /* Pass shell name */
 
-        free(argv);
+        free(cmd_argv);
         free(line);
     }
 
-    return (0);
+    return (status); /* Return the status of the last run command */
 }
