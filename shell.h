@@ -15,11 +15,13 @@
 
 extern char **environ;
 
+/* Prototypes */
 void display_prompt(void);
 char *read_line(void);
 char **strip_newline(char *line);
 int execute_command(char **argv, char *shell_name);
 char *get_path(char *command);
 char *_getenv(const char *name);
+void print_env(void);
 
 #endif

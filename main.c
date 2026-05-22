@@ -246,6 +246,28 @@ int execute_command(char **argv, char *shell_name)
     return (0);
 }
 /**
+ * print_env - Prints the current environment variables
+ *
+ * Return: void
+ */
+void print_env(void)
+{
+    int i = 0;
+    int len;
+
+    if (environ == NULL)
+        return;
+
+    while (environ[i] != NULL)
+    {
+        len = strlen(environ[i]);
+        write(STDOUT_FILENO, environ[i], len);
+        write(STDOUT_FILENO, "\n", 1);
+        i++;
+    }
+}
+
+/**
  * main - Entry point for simple shell
  * @argc: Argument count
  * @argv: Argument vector
@@ -273,14 +295,21 @@ int main(int argc __attribute__((unused)), char **argv)
             /* 1. Check for the "exit" built-in */
             if (strcmp(cmd_argv[0], "exit") == 0)
             {
-                /* 2. Free memory before exiting to avoid leaks */
                 free(cmd_argv);
                 free(line);
-                exit(status); /* 3. Exit with the last command's status */
+                exit(status);
             }
-
-            /* If it's not a built-in, proceed to execute normally */
-            status = execute_command(cmd_argv, argv[0]); 
+            /* 2. Check for the "env" built-in */
+            else if (strcmp(cmd_argv[0], "env") == 0)
+            {
+                print_env();
+                status = 0; /* Success exit status for env */
+            }
+            /* 3. Execute external commands */
+            else
+            {
+                status = execute_command(cmd_argv, argv[0]); 
+            }
         }
 
         /* Clean up at the end of a normal loop */
