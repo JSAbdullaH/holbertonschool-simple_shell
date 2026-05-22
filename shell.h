@@ -9,14 +9,15 @@
 #include <sys/wait.h>
 
 #define PROMPT "$ "
-#define BUFSIZE 1024
+#define TOK_DELIM " \t\r\n"
+#define TOK_BUFSIZE 64
 
 extern char **environ;
 
 /* Prototypes */
 void display_prompt(void);
 char *read_line(void);
-void strip_newline(char *str);
-void execute_command(char *cmd);
+char **strip_newline(char *line);
+void execute_command(char **argv);
 
 #endif

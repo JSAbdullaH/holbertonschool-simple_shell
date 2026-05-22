@@ -31,6 +31,7 @@ ssize_t nread;
 line = NULL;
 len = 0;
 nread = getline(&line, &len, stdin);
+
 if (nread == -1)
 {
 free(line);
@@ -51,13 +52,40 @@ return (line);
  *
  * Return: void
  */
-void strip_newline(char *str)
+char **strip_newline(char *line)
 {
-char *newline;
 
-newline = strchr(str, '\n');
-if (newline)
-*newline = '\0';
+  int bufsize, position;
+  char **tokens;
+  char *token;
+
+  bufsize = TOK_BUFSIZE;
+  position = 0;
+  tokens = malloc(sizeof(char *) * bufsize);
+  if (tokens == NULL) {
+    perror("malloc");
+    exit(EXIT_FAILURE);
+  }
+
+  token = strtok(line, TOK_DELIM);
+  while (token != NULL) {
+    tokens[position] = token;
+    position++;
+
+    if (position >= bufsize) {
+      bufsize += TOK_BUFSIZE;
+      tokens = realloc(tokens, sizeof(char *) * bufsize);
+      if (tokens == NULL) {
+        perror("realloc");
+        exit(EXIT_FAILURE);
+      }
+    }
+
+    token = strtok(NULL, TOK_DELIM);
+  }
+
+  tokens[position] = NULL;
+  return (tokens);
 }
 
 /**
@@ -70,11 +98,13 @@ if (newline)
  *
  * Return: void
  */
-void execute_command(char *cmd)
+void execute_command(char **argv)
 {
-char *argv[2];
 pid_t pid;
-int status = 0;
+int status;
+
+if (argv[0] == NULL)
+  return;
 
 pid = fork();
 if (pid == -1)
@@ -85,14 +115,13 @@ exit(EXIT_FAILURE);
 
 if (pid == 0)
 {
-argv[0] = cmd;
-argv[1] = NULL;
 
-if (execve(cmd, argv, environ) == -1)
-{
-fprintf(stderr, "./simple_shell: No such file or directory: %s\n", cmd);
-exit(EXIT_FAILURE);
-}
+  if (execve(argv[0], argv, environ) == -1)
+
+  {
+    fprintf(stderr, "./simple_shell: 1: %s: not found\n", argv[0]);
+    exit(EXIT_FAILURE);
+  }
 
 }
 else
@@ -113,6 +142,7 @@ waitpid(pid, &status, 0);
 int main(void)
 {
 char *line;
+char **argv;
 
 while (1)
 {
@@ -122,10 +152,10 @@ line = read_line();
 if (line == NULL)
 break;
 
-strip_newline(line);
+argv = strip_newline(line);
+execute_command(argv);
 
-if (line[0] != '\0')
-execute_command(line);
+free(argv);
 
 free(line);
 }
