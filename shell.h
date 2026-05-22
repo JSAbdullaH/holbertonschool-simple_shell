@@ -14,8 +14,8 @@
 #define TOK_BUFSIZE 64
 
 extern char **environ;
+char *_getenv(const char *name);
 
-/* Prototypes */
 void display_prompt(void);
 char *read_line(void);
 char **strip_newline(char *line);

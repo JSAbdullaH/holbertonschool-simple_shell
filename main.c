@@ -44,6 +44,41 @@ return (line);
 }
 
 /**
+ * _getenv - Gets the value of an environment variable
+ * @name: The name of the environment variable to find
+ *
+ * Return: Pointer to the value of the variable, or NULL if not found
+ */
+char *_getenv(const char *name)
+{
+    int i, j;
+    int len;
+
+    if (name == NULL || environ == NULL)
+        return (NULL);
+
+    len = strlen(name);
+
+    for (i = 0; environ[i] != NULL; i++)
+    {
+        /* Check if the current environment string matches 'name' */
+        for (j = 0; j < len; j++)
+        {
+            if (environ[i][j] != name[j])
+                break;
+        }
+
+        /* If we matched the whole name and the next char is '=' */
+        if (j == len && environ[i][j] == '=')
+        {
+            return (&environ[i][j + 1]); /* Return the value after '=' */
+        }
+    }
+
+    return (NULL);
+}
+
+/**
  * strip_newline - Removes the trailing newline character
  * from a string
  * @str: The string to modify in place
@@ -104,21 +139,26 @@ char *get_path(char *command)
     if (command == NULL)
         return (NULL);
 
-    /* If the command already contains a slash (e.g., /bin/ls or ./a.out) */
     if (strchr(command, '/') != NULL)
     {
         if (stat(command, &buffer) == 0)
-            return (strdup(command));
+        {
+            path_copy = malloc(strlen(command) + 1);
+            if (path_copy)
+                strcpy(path_copy, command);
+            return (path_copy);
+        }
         return (NULL);
     }
 
-    path = getenv("PATH"); /* Replace with custom _getenv if required */
+    path = _getenv("PATH");
     if (path == NULL)
         return (NULL);
 
-    path_copy = strdup(path);
+    path_copy = malloc(strlen(path) + 1); 
     if (path_copy == NULL)
         return (NULL);
+    strcpy(path_copy, path);
 
     command_len = strlen(command);
     path_token = strtok(path_copy, ":");
@@ -126,7 +166,7 @@ char *get_path(char *command)
     while (path_token != NULL)
     {
         directory_len = strlen(path_token);
-        file_path = malloc(command_len + directory_len + 2); /* +2 for '/' and '\0' */
+        file_path = malloc(command_len + directory_len + 2);
         
         if (file_path == NULL)
         {
@@ -134,19 +174,17 @@ char *get_path(char *command)
             return (NULL);
         }
 
-        /* Build the path: directory/command */
         strcpy(file_path, path_token);
         strcat(file_path, "/");
         strcat(file_path, command);
 
-        /* Check if the built path exists */
         if (stat(file_path, &buffer) == 0)
         {
             free(path_copy);
             return (file_path);
         }
 
-        free(file_path); /* Free the failed attempt */
+        free(file_path);
         path_token = strtok(NULL, ":");
     }
 
