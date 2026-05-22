@@ -256,24 +256,37 @@ int main(int argc __attribute__((unused)), char **argv)
 {
     char *line;
     char **cmd_argv;
-    int status = 0; /* Keep track of the exit status */
+    int status = 0; /* Keeps track of the exit status */
 
     while (1)
     {
         display_prompt();
 
         line = read_line();
-        if (line == NULL)
+        if (line == NULL) /* Handles EOF (Ctrl+D) */
             break;
 
         cmd_argv = strip_newline(line);
         
         if (cmd_argv[0] != NULL)
-            status = execute_command(cmd_argv, argv[0]); /* Pass shell name */
+        {
+            /* 1. Check for the "exit" built-in */
+            if (strcmp(cmd_argv[0], "exit") == 0)
+            {
+                /* 2. Free memory before exiting to avoid leaks */
+                free(cmd_argv);
+                free(line);
+                exit(status); /* 3. Exit with the last command's status */
+            }
 
+            /* If it's not a built-in, proceed to execute normally */
+            status = execute_command(cmd_argv, argv[0]); 
+        }
+
+        /* Clean up at the end of a normal loop */
         free(cmd_argv);
         free(line);
     }
 
-    return (status); /* Return the status of the last run command */
+    return (status);
 }
