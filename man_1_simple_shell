@@ -1,1 +1,165 @@
-/*Here is the man_1_simple_shell File*/
+.TH SIMPLE_SHELL 1 "November 2025" "Simple Shell 1.0" "User Commands"
+
+.SH NAME
+hsh \- simple UNIX command-line interpreter
+
+.SH SYNOPSIS
+.B ./hsh
+.br
+.B command
+| 
+.B ./hsh
+
+.SH DESCRIPTION
+.B hsh
+is a simple UNIX command-line interpreter written in C as the final project
+of the first trimester at Holberton School. It replicates the core behavior
+of
+.BR /bin/sh ,
+providing a prompt, reading user input, parsing commands and arguments,
+locating executables via the
+.B PATH
+environment variable, and executing them in a child process via
+.BR fork (2)
+and
+.BR execve (2).
+
+The shell can operate in two modes:
+
+.TP
+.B Interactive mode
+When standard input is connected to a terminal, the shell displays the prompt
+.B "$ "
+and waits for the user to enter a command.
+
+.TP
+.B Non-interactive mode
+When standard input is a pipe or a file, the shell reads and executes
+commands without displaying a prompt.
+
+.SH INVOCATION
+After compilation, run the shell with:
+
+.RS
+.B ./hsh
+.RE
+
+To pipe commands into the shell:
+
+.RS
+.B echo "ls -l" | ./hsh
+.RE
+
+.SH BUILT-IN COMMANDS
+The following commands are handled internally by
+.B hsh
+and are not forked into separate processes:
+
+.TP
+.B exit
+Exit the shell. The shell returns the exit status of the last executed command.
+
+.TP
+.B env
+Print the current environment, one variable per line in the form
+.IR NAME=VALUE .
+
+.SH COMMAND EXECUTION
+When a command is entered that is not a built-in:
+.IP \(bu 2
+If the command contains a
+.B /
+character, it is treated as an absolute or relative path and executed directly.
+.IP \(bu 2
+Otherwise, the shell searches each directory listed in the
+.B PATH
+environment variable for an executable file matching the command name.
+.IP \(bu 2
+If the command is found, it is executed in a child process via
+.BR execve (2).
+The parent shell waits for the child to finish and stores its exit status.
+.IP \(bu 2
+If the command is not found, an error message is printed to standard error
+and the shell returns exit code
+.BR 127 .
+
+.SH ENVIRONMENT
+.TP
+.B PATH
+A colon-separated list of directories searched to locate executable commands.
+
+.SH EXIT STATUS
+.B hsh
+returns the exit status of the last executed command. Special values:
+.IP \(bu 2
+.B 0
+\(en command completed successfully.
+.IP \(bu 2
+.B 127
+\(en command not found.
+.IP \(bu 2
+Any other value reflects the exit status of the last executed program.
+
+.SH ERROR MESSAGES
+When a command is not found, the shell prints an error in the following format:
+
+.RS
+.IR shell_name :\ 1 :\ command :\ not\ found
+.RE
+
+For example:
+
+.RS
+.B ./hsh: 1: wrongcommand: not found
+.RE
+
+.SH EXAMPLES
+.TP
+Run a simple command:
+.B $ ls
+.br
+AUTHORS.txt  main.c  README.md  shell.h
+
+.TP
+Run a command with arguments:
+.B $ ls -la /tmp
+
+.TP
+Use the built-in
+.BR env :
+.br
+.B $ env
+.br
+PATH=/usr/local/bin:/usr/bin
+.br
+HOME=/home/user
+
+.TP
+Exit the shell:
+.B $ exit
+
+.SH SIGNALS
+Sending
+.B EOF
+(Ctrl+D) to the shell in interactive mode causes it to exit cleanly and
+print a newline.
+
+.SH BUGS
+No known bugs at this time. Please report any issues on the project repository.
+
+.SH AUTHORS
+Written by:
+.IP \(bu 2
+Hassan Alhuzail \(en https://github.com/Hassan-Alhuzali
+.IP \(bu 2
+Abdullah Alzara \(en https://github.com/JSAbdullaH
+
+.SH SEE ALSO
+.BR sh (1),
+.BR bash (1),
+.BR execve (2),
+.BR fork (2),
+.BR wait (2),
+.BR getline (3),
+.BR stat (2),
+.BR environ (7)
